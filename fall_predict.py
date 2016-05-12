@@ -14,6 +14,7 @@ Features to use:
 
 import numpy as np
 import pandas as pd
+import mpld3
 
 #create dataframe from csv file
 df = pd.read_csv('Fixed_Flat_Surface.csv', sep=',')
@@ -25,19 +26,23 @@ for i in range(len(df.SbjID)):
 		df.Age[i], 
 		#df.A_NormCad_Avg[i], 
 		#df.A_SWPperc_Avg[i], 
-		df.A_SWPperc_CV[i], 
-		#df.A_SpeedNorm_Avg[i], 
+		#df.A_SWPperc_CV[i],
+		#df.A_SL_CV[i], 
+		df.A_SpeedNorm_Avg[i], 
 		#df.A_NormTstr_Avg[i]
 	])
 
 
-features_train = np.array(build_features[:40]+build_features[50:])
+features_train = np.array(build_features[:])
 features_train[:,0] /= features_train[:,0].max()
 features_train[:,1] /= features_train[:,1].max()
-
+#features_train[:,2] /= features_train[:,2].max()
+'''
 features_test = np.array(build_features[40:50])
 features_test[:,0] /= features_test[:,0].max()
-features_test[:,1] /= features_test[:,1].max() 
+features_test[:,1] /= features_test[:,1].max()
+#features_test[:,2] /= features_test[:,2].max()
+'''
 
 
 #populate labels array
@@ -47,8 +52,8 @@ for i in range(len(df.SbjID)):
 		df.Falls[i]
 		)
 
-labels_train = np.array(build_labels[:40]+ build_labels[50:])
-labels_test = np.array(build_labels[40:50])
+labels_train = np.array(build_labels[:])
+#labels_test = np.array(build_labels[40:50])
 
 '''
 print(features_train)
@@ -71,13 +76,14 @@ clf = GaussianNB()
 #clf = RandomForestClassifier()
 
 clf.fit(features_train, labels_train)
-
+'''
 pred = []
 for i in features_test:
 	pred.append(clf.predict(i))
 
 
 predictions = np.array(pred)
+'''
 '''
 print(clf.predict([
 	df.Age[74], 
@@ -88,14 +94,14 @@ print(clf.predict([
 	df.A_NormTstr_Avg[74]
 ]))
 '''
-
+'''
 from sklearn.metrics import accuracy_score
 
 print str(np.ravel(predictions)) + " : predictions"
 print str(labels_test) + " : true"
 
 print(accuracy_score(labels_test,predictions))
-
+'''
 
 #print features_train[:,0]
 
@@ -103,12 +109,12 @@ print(accuracy_score(labels_test,predictions))
 import matplotlib.pyplot as plt
 import pylab as pl
 
-x_min = features_train[:,0].min()-0.1; x_max = 1.1
-y_min = features_train[:,1].min()-0.1; y_max = 1.1
+x_min = features_train[:,0].min() - .05; x_max = features_train[:,0].max() + .05
+y_min = features_train[:,1].min() - .05; y_max = features_train[:,1].max() + .05
 
 # Plot the decision boundary. For that, we will assign a color to each
 # point in the mesh [x_min, m_max]x[y_min, y_max].
-h = .005  # step size in the mesh
+h = .001  # step size in the mesh
 xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
 
@@ -117,22 +123,29 @@ Z = Z.reshape(xx.shape)
 plt.xlim(xx.min(), xx.max())
 plt.ylim(yy.min(), yy.max())
 
-plt.pcolormesh(xx, yy, Z, cmap=pl.cm.seismic)
 
+fig, ax = plt.subplots()
 
+cont = ax.contourf(xx, yy , Z, zorder=-1)
+#plt.pcolormesh(xx, yy, Z, cmap=pl.cm.seismic)
 
-
-
-from pylab import show
 
 vAge = features_train[:,0]
 vSpeed = features_train[:,1]
 
-vAge2 = features_test[:,0]
-vSpeed2 = features_test[:,1]
+#vAge2 = features_test[:,0]
+#vSpeed2 = features_test[:,1]
 
-plt.scatter(vAge2, vSpeed2, c=labels_test, marker='v')
-plt.scatter(vAge, vSpeed, c=labels_train)
+#plt.scatter(vAge2, vSpeed2, c=labels_test, marker='v')
+scatter = ax.scatter(vAge, vSpeed, c=labels_train, zorder=-1)
 
-show()
 
+#for i in range(len(features_train)):
+#	plt.annotate(str(df.SbjID[i]), xy=(features_train[:,0][i],features_train[:,1][i]), bbox = dict(boxstyle = 'round,pad=0.5', fc = 'white', alpha = 0.5))
+
+labels = [str(df.SbjID[i]) for i in range(len(features_train))]
+tooltip = mpld3.plugins.PointLabelTooltip(scatter, labels=labels)
+mpld3.plugins.connect(fig, tooltip)
+
+mpld3.show()
+#plt.show()
